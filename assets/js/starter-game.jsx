@@ -91,43 +91,49 @@ class PairOfTiles extends React.Component {
         return _.reduce(this.state.isVisible, (m, n) => m && n);
     }
 
+    copyCurrentState() {
+        return {
+            tiles: this.state.tiles.slice(),
+            isVisible: this.state.isVisible.slice(),
+            isClickable: this.state.isClickable.slice(),
+            numGuesses: this.state.numGuesses,
+            prevClickIndex: this.state.prevClickIndex,
+            allowClick: this.state.allowClick
+        }
+    }
+    //TODO: when each time handleClick called, it should only update the state once which means only one setState should
+    // be called.
     handleClick(index) {
         if (this.state.allowClick && this.state.isClickable[index]) {
-            this.setState({
-                isVisible: this.map(this.state.isVisible, [index], true),
-                isClickable: this.map(this.state.isClickable, [index], false),
-                numGuesses: this.state.numGuesses + 1,
-            });
+            console.log(this.copyCurrentState());
+            let newState = this.copyCurrentState();
+            console.log(newState);
+            newState.isVisible[index] = true;
+            newState.isClickable[index] = false;
+            newState.numGuesses++;
             // first guess
             if (this.isFirstGuess()) {
-                this.setState({
-                    prevClickIndex: index
-                }, () => {
+                newState.prevClickIndex = index;
+                this.setState(newState, () => {
                     console.log(this.state);
                 });
             } else {
                 // second guess
-                // keep the previous index in a local variable
-                let temp = this.state.prevClickIndex;
-                // this is a default state(we assume successful match), if the latter match happens, the state stay no
-                // change. Otherwise we set a delay and modify the state.
-                this.setState({
-                    prevClickIndex: -1,
-                    allowClick: false
-                });
-                // if two click did not match
-                if (!(this.state.tiles[index] === this.state.tiles[temp])) {
-                    setTimeout(() => this.setState({
-                        // make both invisible
-                        isVisible: this.map(this.state.isVisible, [index, temp], false),
-                        // make both clickable
-                        isClickable: this.map(this.state.isClickable, [index, temp], true),
-                        allowClick: true
-                    }, () => {
+                if (this.state.tiles[index] === this.state.tiles[this.state.prevClickIndex]) {
+                    newState.prevClickIndex = -1;
+                    this.setState(newState, () => console.log(this.state));
+                } else {
+                    newState.allowClick = false;
+                    this.setState(newState, ()=>console.log(this.state));
+                    newState.isVisible[index] = false;
+                    newState.isVisible[this.state.prevClickIndex] = false;
+                    newState.isClickable[index] = true;
+                    newState.isClickable[this.state.prevClickIndex] = true;
+                    newState.allowClick = true;
+                    newState.prevClickIndex = -1;
+                    setTimeout(() => this.setState(newState, () => {
                         console.log(this.state)
                     }), 1000)
-                } else {
-                    this.setState({allowClick: true}, ()=>console.log(this.state));
                 }
             }
 
